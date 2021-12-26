@@ -1,32 +1,65 @@
 """
 Returns the rank maximal matching of the ranked bipartite graph `G`.
 
-    A ranked graph is a grpah wich every edge has a rank [1,r] such that 1
-    is the highest rank, and then 2 is the highest rank, and so 1.
+    A ranked graph is a graph in which every edge has a rank [1,r] such that 1
+    is the highest rank, and then 2 is the next highest rank, and so on.
 
     A matching is a set of edges that do not share any nodes.
 
-    A rank-maximal matching is one in which the maximum
-    possible number of edges with first rank, and subject to that condition,
-    the maximum possible number of edges with second rank, and so on.
+    A rank-maximal matching is one with the maximum
+    possible number of edges with the first rank, and subject to that condition,
+    the maximum possible number of edges with the second rank, and so on.
+
 
     Parameters
     ----------
     G : NetworkX graph
 
-      Undirected wheighted (ranked) bipartite graph
+      Undirected weighted (the weight of every edge represents the rank) bipartite graph
 
     Returns
     -------
     M : dictionary
+       The matching is returned as a dictionary, `matching`, such that
+         ``matching[v] == w`` if node `v` is matched to node `w`. Unmatched
+        nodes do not occur as a key in `matching`.
 
-      The matching is returned as a dictionary, `M`, such that
-      M contains ``(u, v)`` edges in the matching .
+    Examples
+    --------
+    In the biaprtite graph, G = (V,E). with the sets V1 as 0 and V2 as 1,
+    and the weight of the edges as the ranks.
+
+        >>> G = nx.DiGraph()
+        >>> G.add_nodes_from(['a1', 'a2', 'a3'], bipartite=0)
+        >>> G.add_nodes_from(['p1', 'p2'], bipartite=1)
+        >>> G.add_weighted_edges_from([('a1', 'p1', 1), ('a1', 'p2', 2), ('a2', 'p2', 1), ('a3', 'p2', 1)])
+        >>> M=nx.rank_maximal_matching(G)
+        >>> print(M)
+        {'a1': 'p1', 'a2': 'p2', 'p1': 'a1', 'p2': 'a2'}
+        >>> m['a1']
+        'p1'
+
+    -------
+
+        >>> G = nx.DiGraph()
+        >>> G.add_nodes_from(['a1', 'a2'], bipartite=0)
+        >>> G.add_nodes_from(['p1', 'p2'], bipartite=1)
+        >>> G.add_weighted_edges_from([('a1', 'p1', 2), ('a1', 'p2', 1), ('a2', 'p2', 2)])
+        >>> M=nx.rank_maximal_matching(G)
+        >>> print(M)
+        {'a1': 'p2', 'p2': 'a1'}
+        >>>m['a1']
+        'p2'
+
 
 
     Raises
     ------
-
+    AmbiguousSolution
+      Raised if the input bipartite graph is disconnected and no container
+      with all nodes in one bipartite set is provided. When determining
+      the nodes in each bipartite set more than one valid solution is
+      possible if the input graph is disconnected.
 
     Notes
     -----
@@ -53,14 +86,15 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
 
 def rank_maximal_matching(G):
     M = {}
+    
     return M
 
-##################################################
+
 """
 Gi - is a graph with i' ranked edges 
 return- EVi - set of even vretices
-        Oi - set of odd vertices
-        Ui - set of unreachable vertices
+        Oi  -  set of odd vertices
+        Ui  -  set of unreachable vertices
 """
 
 
@@ -108,3 +142,4 @@ remove OiOi edges
 
 def get_reverse_of_augmenting_path(Gi):
     return augmenting_path"""
+

@@ -26,8 +26,9 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
 
     Examples
     --------
-    In the biaprtite graph, G = (V,E). with the sets V1 as 0 and V2 as 1,
+    In the biaprtite graph, G = (V,E), with the sets V1 as 0 and V2 as 1,
     and the weight of the edges as the ranks.
+    The rank maximal matching returns the following dictionary.
 
         >>> G = nx.DiGraph()
         >>> G.add_nodes_from(['a1', 'a2', 'a3'], bipartite=0)

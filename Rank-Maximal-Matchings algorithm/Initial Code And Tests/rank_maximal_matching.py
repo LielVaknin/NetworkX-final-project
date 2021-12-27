@@ -84,9 +84,7 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
 
     Notes
     -----
-    This function uses the `Hopcroft--Karp matching algorithm
-    <https://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm>`_ for
-    bipartite graphs.
+    This function uses the algorithm published in the article of Irving et al. (2006), "Rank maximal matching".
 
     See :mod:`bipartite documentation <networkx.algorithms.bipartite>`
     for further details on how bipartite graphs are handled in NetworkX.

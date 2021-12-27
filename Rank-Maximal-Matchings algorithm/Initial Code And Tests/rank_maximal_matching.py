@@ -26,9 +26,38 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
 
     Examples
     --------
-    In the biaprtite graph, G = (V,E), with the sets V1 as 0 and V2 as 1,
+    In the biaprtite graph, G = (V,E). with the sets V1 as 0 and V2 as 1,
     and the weight of the edges as the ranks.
-    The rank maximal matching returns the following dictionary.
+
+
+        >>> G = nx.DiGraph()
+        >>> G.add_nodes_from(['a1', 'a2'], bipartite=0)
+        >>> G.add_nodes_from(['p1', 'p2'], bipartite=1)
+        >>> G.add_weighted_edges_from([('a1', 'p1', 2), ('a1', 'p2', 1), ('a2', 'p2', 2)])
+        >>> M=nx.rank_maximal_matching(G)
+        >>> print(M)
+        {'a1': 'p2', 'p2': 'a1'}
+        >>>m['a1']
+        'p2'
+
+        explanation:                            2
+                        G =             a1-----------p1
+                                         \
+                                          \
+                                           \
+                                            \
+                                             \ 1
+                                              \
+                                               \
+                                                \
+                                           2     \
+                                    a2-----------p2
+
+         The matching M1 is {'a1':'p2', 'p2':'a1'} so O1, EV1 and U1 are  {a1,p2},{a2,p1},{} respectively.
+         After removing the edges incident to O1 with the rank higher than 1 {(a1,p1),(a2,p2)} there are no more edges
+         to add to G1, so an augmenting path doesnt exists and the algorithm ends returning M1.
+
+        -------
 
         >>> G = nx.DiGraph()
         >>> G.add_nodes_from(['a1', 'a2', 'a3'], bipartite=0)
@@ -40,17 +69,8 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
         >>> m['a1']
         'p1'
 
-    -------
 
-        >>> G = nx.DiGraph()
-        >>> G.add_nodes_from(['a1', 'a2'], bipartite=0)
-        >>> G.add_nodes_from(['p1', 'p2'], bipartite=1)
-        >>> G.add_weighted_edges_from([('a1', 'p1', 2), ('a1', 'p2', 1), ('a2', 'p2', 2)])
-        >>> M=nx.rank_maximal_matching(G)
-        >>> print(M)
-        {'a1': 'p2', 'p2': 'a1'}
-        >>>m['a1']
-        'p2'
+
 
 
 
@@ -64,7 +84,7 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
 
     Notes
     -----
-    This function is implemented with the `Hopcroft--Karp matching algorithm
+    This function uses the `Hopcroft--Karp matching algorithm
     <https://en.wikipedia.org/wiki/Hopcroft%E2%80%93Karp_algorithm>`_ for
     bipartite graphs.
 

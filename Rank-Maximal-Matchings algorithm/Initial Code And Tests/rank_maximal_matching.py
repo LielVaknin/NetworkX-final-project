@@ -1,7 +1,8 @@
 """
 Returns the rank maximal matching of the ranked bipartite graph `G`.
-    A ranked graph is a graph in which every edge has a rank [1,r] such that 1
-    is the highest rank, and then 2 is the next highest rank, and so on.
+    A ranked graph is a graph in which every edge has a rank [1,r]
+    (the algorithm ignores non-positive ranks)
+    such that 1 is the highest rank, and then 2 is the next highest rank, and so on.
     A matching is a set of edges that do not share any nodes.
     A rank-maximal matching is one with the maximum
     possible number of edges with the first rank, and subject to that condition,
@@ -20,7 +21,7 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
     --------
     In the biaprtite graph, G = (V,E). with the sets V1 as 0 and V2 as 1,
     and the weight of the edges as the ranks.
-        >>> G = nx.DiGraph()
+        >>> G = nx.Graph()
         >>> G.add_nodes_from(['a1', 'a2'], bipartite=0)
         >>> G.add_nodes_from(['p1', 'p2'], bipartite=1)
         >>> G.add_weighted_edges_from([('a1', 'p1', 2), ('a1', 'p2', 1), ('a2', 'p2', 2)])
@@ -45,7 +46,7 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
          After removing the edges incident to O1 with the rank higher than 1 {(a1,p1),(a2,p2)} there are no more edges
          to add to G1, so an augmenting path doesnt exists and the algorithm ends returning M1.
         -------
-        >>> G = nx.DiGraph()
+        >>> G = nx.Graph()
         >>> G.add_nodes_from(['a1', 'a2', 'a3'], bipartite=0)
         >>> G.add_nodes_from(['p1', 'p2'], bipartite=1)
         >>> G.add_weighted_edges_from([('a1', 'p1', 1), ('a1', 'p2', 2), ('a2', 'p2', 1), ('a3', 'p2', 1)])

@@ -1,3 +1,6 @@
+import networkx as nx
+from networkx.algorithms.bipartite import sets as bipartite_sets
+
 """
 Returns the rank maximal matching of the ranked bipartite graph `G`.
     A ranked graph is a graph in which every edge has a rank [1,r]
@@ -79,9 +82,14 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
     """
 
 
-def rank_maximal_matching(G, rank="rank"):
-    M = {}
-
+def rank_maximal_matching(G, rank="rank", top_nodes=None):
+    graph = get_G1(G)
+    left, right = bipartite_sets(G, top_nodes)
+    M = nx.bipartite.hopcroft_karp_matching(graph, top_nodes)
+    free_nodes = find_free_vertices(graph, M)
+    r = 4
+    for i in range(1, r):
+        divide_to_sets(graph, M, free_nodes)
     return M
 
 
@@ -93,9 +101,50 @@ return- EVi - set of even vretices
 """
 
 
-"""def divide_to_sets(Gi):
-    return EVi, Oi, Ui
-def divide_vertices_by_rank(G):
+def _alternating_dfs(G, matched_edges, free_nodes):
+    """Returns True if and only if `u` is connected to one of the
+    targets by an alternating path.
+    `u` is a vertex in the graph `G`.
+    If `along_matched` is True, this step of the depth-first search
+    will continue only through edges in the given matching. Otherwise, it
+    will continue only through edges *not* in the given matching.
+    """
+    even = set()
+    odd = set()
+    unreachable = set(G.nodes)
+    visited = set()
+    for u in free_nodes:
+        initial_depth = 0
+        stack = [(u, iter(G[u]), initial_depth)]
+        even.add(u)
+        unreachable.remove(u)
+        visited.add(u)
+        while stack:
+            parent, children, depth = stack[-1]
+            # valid_edges = unmatched_edges if depth % 2 else matched_edges
+            try:
+                child = next(children)
+                if child not in visited:
+                    # if (parent, child) in valid_edges or (child, parent) in valid_edges:
+                    if depth % 2 == 0 and (parent, child) not in matched_edges:
+                        # if depth % 2 == 0:
+                        odd.add(child)
+                    elif depth % 2 == 1 and (parent, child) in matched_edges:
+                        even.add(child)
+                    visited.add(child)
+                    unreachable.remove(child)
+                    stack.append((child, iter(G[child]), depth + 1))
+            except StopIteration:
+                stack.pop()
+    return even, odd, unreachable
+
+def divide_to_sets(Gi, M, free_nodes):
+    matched_edges = [(k, v) for k, v in M.items()]
+    # unmatched_edges = [(k, v) for k, v in Gi.edges(data=True) if (k, v) not in matched_edges]
+    return _alternating_dfs(Gi, matched_edges, free_nodes)
+
+
+"""def divide_vertices_by_rank(G):
     return {}
 """
 
@@ -105,12 +154,22 @@ return - list_of_free_vertices
 """
 
 
-"""def find_free_vertices(Gi):
-    return list_of_free_vertices
-def create_Gi_plus_1(Gi, rank):
+def find_free_vertices(Gi: nx.Graph, M):
+    free_nodes = list(Gi.nodes)
+    for key in M:
+        free_nodes.remove(key)
+    return free_nodes
+
+
+def create_Gi_plus_1(Gi, rank="rank"):
     return Gi
-def get_G1(G):
-    return G1"""
+
+
+def get_G1(G: nx.Graph, rank="rank", top_nodes=None):
+    G1 = nx.Graph()
+    G1 = G.add_nodes_from(G.nodes)
+    G1.add_edges_from([(u, v, d) for (u, v, d) in G.edges(data=True) if d["rank"] == 1])
+    return G1
 
 
 # def remove_OO_edges(G,Oi):
@@ -123,7 +182,6 @@ remove edges from Oi or Ui with rank greater than rank_i
 remove OiUi edges
 remove OiOi edges
 """
-
 
 """def remove_edges(G, Oi, Ui, rank_i):
     return

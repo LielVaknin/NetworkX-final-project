@@ -1,3 +1,6 @@
+import copy
+import math
+
 import networkx as nx
 from networkx.algorithms.bipartite import sets as bipartite_sets
 
@@ -83,25 +86,64 @@ Returns the rank maximal matching of the ranked bipartite graph `G`.
 
 
 def rank_maximal_matching(G, rank="rank", top_nodes=None):
-    graph = get_G1(G)
+    Gi = get_G1(G, rank=rank)
     left, right = bipartite_sets(G, top_nodes)
-    M = nx.bipartite.hopcroft_karp_matching(graph, top_nodes)
-    free_nodes = find_free_vertices(graph, M)
+    M = nx.bipartite.hopcroft_karp_matching(Gi, top_nodes)
+    free_nodes = find_free_vertices(Gi, M)
+    graph = nx.Graph(G)
     r = 4
     for i in range(1, r):
-        divide_to_sets(graph, M, free_nodes)
+        even, odd, unreachable = divide_to_sets(Gi, M, free_nodes)
+        remove_edges(graph, odd, unreachable, i, rank=rank)
+        remove_OO_edges(Gi, odd)
+        remove_OU_edges(Gi, odd, unreachable)
+        create_Gi_plus_1(graph, Gi, i, rank=rank)
+        matched_edges = [(k, v) for k, v in M.items()]
+        print(max_augmenting_path(Gi,matched_edges,free_nodes))
+        #M = nx.bipartite.hopcroft_karp_matching(Gi,top_nodes)
     return M
 
 
-"""
-Gi - is a graph with i' ranked edges 
-return- EVi - set of even vretices
-        Oi  -  set of odd vertices
-        Ui  -  set of unreachable vertices
-"""
+def get_mi_plus1(G, matched_edges, free_nodes):
+    max_path = max_augmenting_path(G, matched_edges, free_nodes)
+    matching = {}
 
 
-def _alternating_dfs(G, matched_edges, free_nodes):
+def max_augmenting_path(G, matched_edges, free_nodes):
+    paths = [{}]
+    max_path = {}
+    max_length_path = len(matched_edges)/2
+    for u in free_nodes:
+        visited = set()
+        initial_depth = 0
+        stack = [(u, iter(G[u]), initial_depth, {})]
+        visited.add(u)
+        while stack:
+            parent, children, depth, path = stack[-1]
+            try:
+                child = next(children)
+                if child not in visited:
+                    current_path = copy.deepcopy(path)
+                    if depth % 2 == 0 and (parent, child) not in matched_edges:
+                        current_path[parent] = child
+                        if child in free_nodes:
+                            paths.append(current_path)
+                            if math.ceil(len(current_path) / 2) >= max_length_path:
+                                max_length_path = math.ceil(len(current_path) / 2)
+                                max_path = current_path
+                        else:
+                            visited.add(child)
+                            stack.append((child, iter(G[child]), depth + 1,current_path))
+                    elif depth % 2 == 1 and (parent, child) in matched_edges:
+                        current_path[parent] = child
+                        visited.add(child)
+                        stack.append((child, iter(G[child]), depth + 1, current_path))
+            except StopIteration:
+                stack.pop()
+    return max_path
+
+
+def alternating_dfs(G, matched_edges, free_nodes):
     """Returns True if and only if `u` is connected to one of the
     targets by an alternating path.
     `u` is a vertex in the graph `G`.
@@ -114,6 +156,8 @@ def _alternating_dfs(G, matched_edges, free_nodes):
     unreachable = set(G.nodes)
     visited = set()
     for u in free_nodes:
+        if u in visited:
+            continue
         initial_depth = 0
         stack = [(u, iter(G[u]), initial_depth)]
         even.add(u)
@@ -121,32 +165,37 @@ def _alternating_dfs(G, matched_edges, free_nodes):
         visited.add(u)
         while stack:
             parent, children, depth = stack[-1]
-            # valid_edges = unmatched_edges if depth % 2 else matched_edges
             try:
                 child = next(children)
                 if child not in visited:
-                    # if (parent, child) in valid_edges or (child, parent) in valid_edges:
                     if depth % 2 == 0 and (parent, child) not in matched_edges:
-                        # if depth % 2 == 0:
                         odd.add(child)
+                        visited.add(child)
+                        unreachable.remove(child)
+                        stack.append((child, iter(G[child]), depth + 1))
                     elif depth % 2 == 1 and (parent, child) in matched_edges:
                         even.add(child)
-                    visited.add(child)
-                    unreachable.remove(child)
-                    stack.append((child, iter(G[child]), depth + 1))
+                        visited.add(child)
+                        unreachable.remove(child)
+                        stack.append((child, iter(G[child]), depth + 1))
             except StopIteration:
                 stack.pop()
     return even, odd, unreachable
 
+
+"""
+Gi - is a graph with i' ranked edges 
+return- EVi - set of even vretices
+        Oi  -  set of odd vertices
+        Ui  -  set of unreachable vertices
+"""
+
+
 def divide_to_sets(Gi, M, free_nodes):
     matched_edges = [(k, v) for k, v in M.items()]
     # unmatched_edges = [(k, v) for k, v in Gi.edges(data=True) if (k, v) not in matched_edges]
-    return _alternating_dfs(Gi, matched_edges, free_nodes)
+    return alternating_dfs(Gi, matched_edges, free_nodes)
 
-
-"""def divide_vertices_by_rank(G):
-    return {}
-"""
 
 """
 Gi - is a graph with i' ranked edges
@@ -161,29 +210,35 @@ def find_free_vertices(Gi: nx.Graph, M):
     return free_nodes
 
 
-def create_Gi_plus_1(Gi, rank="rank"):
-    return Gi
+def create_Gi_plus_1(G, Gi, rank_i, rank="rank"):
+    Gi.add_edges_from([(u, v, d) for (u, v, d) in G.edges(data=True) if d[rank] == rank_i + 1])
 
 
-def get_G1(G: nx.Graph, rank="rank", top_nodes=None):
+def get_G1(G: nx.Graph, rank="rank"):
     G1 = nx.Graph()
-    G1 = G.add_nodes_from(G.nodes)
-    G1.add_edges_from([(u, v, d) for (u, v, d) in G.edges(data=True) if d["rank"] == 1])
+    G1.add_nodes_from(G.nodes)
+    G1.add_edges_from([(u, v, d) for (u, v, d) in G.edges(data=True) if d[rank] == 1])
     return G1
 
 
-# def remove_OO_edges(G,Oi):
-#     return
-#
-# def remove_OU_edges(G,Oi,Ui):
-#     return
+def remove_OO_edges(G, Oi):
+    G.remove_edges_from([(u, v) for (u, v) in G.edges if
+                         (u in Oi and v in Oi)])
+
+
+def remove_OU_edges(G, Oi, Ui):
+    G.remove_edges_from([(u, v) for (u, v) in G.edges if
+                         (u in Oi and v in Ui) or (v in Oi and u in Ui)])
+
+
 """
 remove edges from Oi or Ui with rank greater than rank_i 
 remove OiUi edges
 remove OiOi edges
 """
 
-"""def remove_edges(G, Oi, Ui, rank_i):
-    return
-def get_reverse_of_augmenting_path(Gi):
-    return augmenting_path"""
+
+def remove_edges(G, Oi, Ui, rank_i, rank="rank"):
+    G.remove_edges_from([(u, v) for (u, v, d) in G.edges(data=True) if
+                         d[rank] > rank_i and (u in Oi or v in Oi or u in Ui or v in Ui)])
+

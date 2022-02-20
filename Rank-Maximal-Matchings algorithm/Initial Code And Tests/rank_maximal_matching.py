@@ -1,3 +1,4 @@
+import collections
 import copy
 import math
 
@@ -91,28 +92,30 @@ def rank_maximal_matching(G, rank="rank", top_nodes=None):
     M = nx.bipartite.hopcroft_karp_matching(Gi, top_nodes)
     free_nodes = find_free_vertices(Gi, M)
     graph = nx.Graph(G)
-    r = 4
-    for i in range(1, r):
+    max_rank = get_max_rank(G, rank)
+    for i in range(1, max_rank):
         even, odd, unreachable = divide_to_sets(Gi, M, free_nodes)
         remove_edges(graph, odd, unreachable, i, rank=rank)
         remove_OO_edges(Gi, odd)
         remove_OU_edges(Gi, odd, unreachable)
         create_Gi_plus_1(graph, Gi, i, rank=rank)
-        matched_edges = [(k, v) for k, v in M.items()]
-        print(max_augmenting_path(Gi,matched_edges,free_nodes))
-        #M = nx.bipartite.hopcroft_karp_matching(Gi,top_nodes)
+        M = get_mi_plus1(G, M, free_nodes)
     return M
 
 
-def get_mi_plus1(G, matched_edges, free_nodes):
-    max_path = max_augmenting_path(G, matched_edges, free_nodes)
-    matching = {}
+def get_max_rank(G, rank="rank"):
+    return max([d[rank] for (u, v, d) in G.edges(data=True)])
 
 
-def max_augmenting_path(G, matched_edges, free_nodes):
+def get_mi_plus1(G, M, free_nodes):
+    return max_augmenting_path(G, M, free_nodes)
+
+
+def max_augmenting_path(G, M, free_nodes):
+    matched_edges = [(k, v) for k, v in M.items()]
     paths = [{}]
-    max_path = {}
-    max_length_path = len(matched_edges)/2
+    max_sym_matching = M
+    max_length_sym_matching = len(matched_edges)
     for u in free_nodes:
         visited = set()
         initial_depth = 0
@@ -123,24 +126,23 @@ def max_augmenting_path(G, matched_edges, free_nodes):
             try:
                 child = next(children)
                 if child not in visited:
-                    current_path = copy.deepcopy(path)
+                    current_symmetric_matching = copy.deepcopy(path)
                     if depth % 2 == 0 and (parent, child) not in matched_edges:
-                        current_path[parent] = child
+                        current_symmetric_matching[parent] = child
                         if child in free_nodes:
-                            paths.append(current_path)
-                            if math.ceil(len(current_path) / 2) >= max_length_path:
-                                max_length_path = math.ceil(len(current_path) / 2)
-                                max_path = current_path
+                            paths.append(current_symmetric_matching)
+                            if len(current_symmetric_matching) > max_length_sym_matching:
+                                max_length_sym_matching = len(current_symmetric_matching)
+                                max_sym_matching = current_symmetric_matching
                         else:
                             visited.add(child)
-                            stack.append((child, iter(G[child]), depth + 1,current_path))
+                            stack.append((child, iter(G[child]), depth + 1,current_symmetric_matching))
                     elif depth % 2 == 1 and (parent, child) in matched_edges:
-                        current_path[parent] = child
                         visited.add(child)
-                        stack.append((child, iter(G[child]), depth + 1, current_path))
+                        stack.append((child, iter(G[child]), depth + 1, current_symmetric_matching))
             except StopIteration:
                 stack.pop()
-    return max_path
+    return max_sym_matching
 
 
 def alternating_dfs(G, matched_edges, free_nodes):
@@ -241,4 +243,3 @@ remove OiOi edges
 def remove_edges(G, Oi, Ui, rank_i, rank="rank"):
     G.remove_edges_from([(u, v) for (u, v, d) in G.edges(data=True) if
                          d[rank] > rank_i and (u in Oi or v in Oi or u in Ui or v in Ui)])
-
